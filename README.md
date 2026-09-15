@@ -1,1 +1,1 @@
-# -wow-forever-main-quiz
+# wow-forever-main-quiz
