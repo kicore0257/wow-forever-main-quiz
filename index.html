@@ -99,8 +99,8 @@
     <section id="results" aria-live="polite"></section>
 
     <section id="tiebreaker">
-      <h2 class="section-title">Round 2: Adaptive refinement</h2>
-      <p class="tiebreak-note">These six questions are selected from a larger bank by testing which questions best separate your current leading trees. You can check more than one answer.</p>
+      <h2 class="section-title" id="round2Title">Round 2: Adaptive refinement</h2>
+      <p class="tiebreak-note" id="round2Note">These six questions are selected from a larger bank by testing which questions best separate your current leading trees. You can check more than one answer.</p>
       <div id="tieQuiz"></div>
       <div class="error" id="tieError" role="alert">Answer all six refinement questions first.</div>
       <div class="actions"><button class="primary" id="refineBtn" type="button" onclick="refineQuiz()">Calculate final result</button></div>
@@ -122,7 +122,7 @@
   </main>
 
   <footer>
-    <strong>Source basis:</strong> Blizzard's WoW Forever announcement and Deep Dive design philosophy, cross-checked against current community transcriptions of the BlizzCon demo trees. The community dataset used for mechanics contains 470 talents across 27 trees; exact change classifications can differ between trackers, and beta data may supersede the demo. Quiz logic version 3.1 adds direct adaptive-question discrimination, leave-one-question-out stability testing, stale-result protection, source-reviewed tree profiles, and a plain-language sigma score guide. This page is unofficial and not affiliated with Blizzard Entertainment.<br><br>
+    <strong>Source basis:</strong> Blizzard's WoW Forever announcement and Deep Dive design philosophy, cross-checked against current community transcriptions of the BlizzCon demo trees. The community dataset used for mechanics contains 470 talents across 27 trees; exact change classifications can differ between trackers, and beta data may supersede the demo. Quiz logic version 3.2 adds direct adaptive-question discrimination, leave-one-question-out stability testing, close-match routing, stale-result protection, source-reviewed tree profiles, and a plain-language sigma score guide. This page is unofficial and not affiliated with Blizzard Entertainment.<br><br>
     Sources: <a href="https://worldofwarcraft.blizzard.com/en-us/news/24303313" target="_blank" rel="noopener noreferrer">Blizzard: Forever Deep Dive</a> · <a href="https://worldofwarcraft.blizzard.com/en-us/news/24303862/world-of-warcraft-forever-whats-next-panel-recap" target="_blank" rel="noopener noreferrer">Blizzard: What's Next recap</a> · <a href="https://wowforever.quest/guides/wow-forever-talent-changes" target="_blank" rel="noopener noreferrer">Demo talent transcription</a>
   </footer>
 </div>
@@ -535,13 +535,27 @@ function showRuntimeError(e){const err=document.getElementById("error");err.text
 function clearStale(){if(basePref){basePref=null;baseInfo=0;baseParts=[];selectedTieQuestions=[];document.getElementById("results").style.display="none";document.getElementById("tiebreaker").style.display="none";const err=document.getElementById("error");err.textContent="Your Round 1 answers changed. Build the shortlist again so the adaptive questions stay valid.";err.style.display="block"}}
 document.getElementById("quiz").addEventListener("change",()=>{updateProgress();clearStale()});
 
-function shortlistHTML(ranks,pref,info){
+function round1CloseInfo(ranks){
+  const leaderZ=relativeZ(ranks,ranks[0].sim);
+  // Round 1 is intentionally provisional, so use a slightly wider close-race band
+  // than the final tie threshold. Any tree within 0.30σ of the leader is treated
+  // as a serious near-tied candidate for the purpose of routing into Round 2.
+  const candidates=ranks.slice(0,5).filter(r=>leaderZ-relativeZ(ranks,r.sim)<=.30);
+  return {close:candidates.length>=2,candidates,leaderZ};
+}
+
+function shortlistHTML(ranks,pref,info,closeInfo){
   const top=ranks.slice(0,5);const pos=topPositive(pref).map(x=>dimNames[x[0]]);
+  const closeNames=closeInfo.candidates.map(r=>`${r.cls} · ${r.name}`);
+  const headline=closeInfo.close?"Close match detected":"No main selected yet";
+  const desc=closeInfo.close
+    ? `${closeNames.join(" and ")} are separated by less than 0.30σ after Round 1. That is too close to justify calling a winner, so the next questions are targeted specifically at separating them.`
+    : "These are your five closest primary-tree identities. Round 2 is chosen specifically to separate these candidates.";
   return `<h2 class="section-title">Initial shortlist</h2>
     <div class="result-hero">
       <div class="winner-label">Round 1 complete</div>
-      <div class="winner">No main selected yet</div>
-      <div class="classline">These are your five closest primary-tree identities. Round 2 is chosen specifically to separate these candidates.</div>
+      <div class="winner">${headline}</div>
+      <div class="classline">${desc}</div>
       <div class="fittext" style="margin-top:12px">Answer specificity: ${Math.round(info*100)} / 100. This measures how selective your answers were, not how good or certain your preferences are.</div>
       <div class="reason-grid">${pos.slice(0,3).map(x=>`<div class="pill">Current signal: <strong>${x}</strong></div>`).join("")}</div>
     </div>
@@ -556,9 +570,20 @@ function scoreQuiz(){
     if(c.answered!==round1Questions.length){err.textContent=`You answered ${c.answered} of ${round1Questions.length} questions. Answer every question before building your shortlist.`;err.style.display="block";safeScroll(err);return}
     if(c.info<.16||mag(c.vec)<.5){err.textContent="Your selections are too broad to produce a reliable shortlist. On at least a few questions, choose only the answers that fit you best. Selecting all four is intentionally neutral.";err.style.display="block";safeScroll(err);return}
     err.style.display="none";basePref=c.vec;baseInfo=c.info;baseParts=c.parts;
-    const ranks=rankings(basePref);document.getElementById("results").innerHTML=shortlistHTML(ranks,basePref,baseInfo);document.getElementById("results").style.display="block";
+    const ranks=rankings(basePref),closeInfo=round1CloseInfo(ranks);
+    document.getElementById("results").innerHTML=shortlistHTML(ranks,basePref,baseInfo,closeInfo);document.getElementById("results").style.display="block";
     selectedTieQuestions=chooseTieQuestions(ranks.slice(0,5),basePref);renderQuiz("tieQuiz",selectedTieQuestions,"t");
-    document.getElementById("tiebreaker").style.display="block";safeScroll(document.getElementById("results"));
+    const round2Title=document.getElementById("round2Title"),round2Note=document.getElementById("round2Note");
+    if(closeInfo.close){
+      const names=closeInfo.candidates.map(r=>`${r.cls} · ${r.name}`).join(" / ");
+      round2Title.textContent="Round 2: Close match refinement";
+      round2Note.innerHTML=`<strong>Close match detected:</strong> ${names}. These six adaptive questions were chosen specifically to separate your closest candidates. Answer them to determine the final result.`;
+    }else{
+      round2Title.textContent="Round 2: Adaptive refinement";
+      round2Note.textContent="These six questions are selected from a larger bank by testing which questions best separate your current leading trees. You can check more than one answer.";
+    }
+    document.getElementById("tiebreaker").style.display="block";
+    safeScroll(closeInfo.close?document.getElementById("tiebreaker"):document.getElementById("results"));
   }catch(e){showRuntimeError(e)}
 }
 
@@ -612,7 +637,7 @@ function refineQuiz(){
 }
 
 function resetQuiz(){
-  try{document.querySelectorAll('input[type=checkbox]').forEach(x=>x.checked=false);basePref=null;baseInfo=0;baseParts=[];selectedTieQuestions=[];updateProgress();document.getElementById("results").style.display="none";document.getElementById("tiebreaker").style.display="none";document.getElementById("error").style.display="none";document.getElementById("tieError").style.display="none";try{window.scrollTo({top:0,behavior:"smooth"})}catch(e){window.scrollTo(0,0)}}catch(e){showRuntimeError(e)}
+  try{document.querySelectorAll('input[type=checkbox]').forEach(x=>x.checked=false);basePref=null;baseInfo=0;baseParts=[];selectedTieQuestions=[];updateProgress();document.getElementById("results").style.display="none";document.getElementById("tiebreaker").style.display="none";document.getElementById("error").style.display="none";document.getElementById("tieError").style.display="none";const r2t=document.getElementById("round2Title"),r2n=document.getElementById("round2Note");if(r2t)r2t.textContent="Round 2: Adaptive refinement";if(r2n)r2n.textContent="These six questions are selected from a larger bank by testing which questions best separate your current leading trees. You can check more than one answer.";try{window.scrollTo({top:0,behavior:"smooth"})}catch(e){window.scrollTo(0,0)}}catch(e){showRuntimeError(e)}
 }
 window.addEventListener("error",ev=>{const status=document.getElementById("jsStatus");if(status){status.className="js-status";status.innerHTML="<strong>JavaScript error:</strong> "+(ev.message||"Unknown error")+". Reload in Safari or Chrome."}});
 const status=document.getElementById("jsStatus");if(status){status.className="js-status ready";status.innerHTML="<strong>Quiz ready.</strong> JavaScript is running on this device."}
