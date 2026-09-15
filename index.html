@@ -1,0 +1,622 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>WoW Forever Main Finder</title>
+<style>
+  :root{
+    --bg:#0b0f17;--panel:#121926;--panel2:#172132;--text:#eef4ff;--muted:#9fb0c8;
+    --line:#26354b;--accent:#d7a94b;--accent2:#6fc1ff;--good:#75d99b;--warn:#f0c66b;
+    --shadow:0 14px 40px rgba(0,0,0,.28);--radius:16px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:radial-gradient(circle at 10% -10%,#1a2740 0,transparent 38%),var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.45}
+  .wrap{width:min(980px,calc(100% - 28px));margin:0 auto;padding:34px 0 70px}
+  header{padding:28px 0 18px}
+  .eyebrow{font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:800}
+  h1{font-size:clamp(2rem,6vw,3.9rem);line-height:1.02;margin:.35rem 0 .7rem;letter-spacing:-.04em}
+  .lede{max-width:760px;color:var(--muted);font-size:1.04rem;margin:0}
+  .notice{margin:22px 0;padding:14px 16px;border:1px solid var(--line);background:rgba(18,25,38,.82);border-radius:12px;color:#c7d5e8;font-size:.93rem}
+  .notice strong{color:var(--text)}
+  .toolbar{position:sticky;top:0;z-index:10;padding:10px 0;background:linear-gradient(var(--bg) 65%,transparent)}
+  .progress-shell{height:8px;border-radius:99px;background:#1a2638;overflow:hidden;border:1px solid #26344a}
+  .progress{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .2s ease}
+  .progress-text{display:flex;justify-content:space-between;color:var(--muted);font-size:.82rem;margin-top:7px}
+  .section-title{margin:30px 0 14px;font-size:1.25rem}
+  .question{min-inline-size:0;background:linear-gradient(180deg,rgba(23,33,50,.96),rgba(18,25,38,.96));border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin:13px 0;box-shadow:var(--shadow)}
+  .qnum{color:var(--accent);font-size:.77rem;font-weight:800;letter-spacing:.09em;text-transform:uppercase}
+  .question h3,.question legend{font-size:1.05rem;margin:6px 0 13px;font-weight:750;padding:0;color:var(--text)}
+  .opts{display:grid;gap:9px}
+  .opt{display:flex;gap:10px;align-items:flex-start;padding:11px 12px;border:1px solid #2a3950;border-radius:11px;background:#101722;cursor:pointer;transition:.15s ease}
+  .opt:hover{border-color:#486384;background:#131d2b}.opt:focus-within{outline:2px solid var(--accent2);outline-offset:2px}
+  .opt:has(input:checked){border-color:var(--accent2);background:#14243a;box-shadow:inset 0 0 0 1px rgba(111,193,255,.25)}
+  input[type=checkbox]{margin-top:3px;accent-color:#79c9ff;transform:scale(1.08)}
+  .hint{font-size:.82rem;color:var(--muted);margin-top:9px}
+  .actions{display:flex;gap:10px;flex-wrap:wrap;margin:24px 0}
+  button{appearance:none;border:1px solid transparent;border-radius:11px;padding:12px 16px;font:inherit;font-weight:800;cursor:pointer;transition:.15s ease}
+  .primary{background:linear-gradient(135deg,#e2b95d,#c8922f);color:#15100a}
+  .primary:hover{filter:brightness(1.08);transform:translateY(-1px)}button:focus-visible{outline:3px solid var(--accent2);outline-offset:2px}
+  .secondary{background:#152033;border-color:#30435f;color:var(--text)}
+  .secondary:hover{background:#1b2a40}
+  .ghost{background:transparent;border-color:#2b3b53;color:#b9c8da}
+  .error{display:none;padding:12px 14px;border-radius:10px;border:1px solid #7d3f43;background:#29171b;color:#ffb4b9;margin:10px 0}
+  .js-status{margin:12px 0 18px;padding:11px 13px;border-radius:10px;border:1px solid #6b5527;background:#251e10;color:#f4d98c;font-size:.88rem}
+  .js-status.ready{border-color:#28593e;background:#10251a;color:#9be0b7}
+  #results,#tiebreaker{display:none}
+  .result-hero{background:linear-gradient(135deg,#1a2638,#111925 62%);border:1px solid #31435d;border-radius:18px;padding:22px;box-shadow:var(--shadow)}
+  .winner-label{color:var(--accent);text-transform:uppercase;letter-spacing:.12em;font-size:.76rem;font-weight:850}
+  .winner{font-size:clamp(1.7rem,6vw,2.8rem);margin:.25rem 0 .3rem;letter-spacing:-.03em}
+  .classline{color:var(--muted)}
+  .fitbar{height:10px;background:#1a273a;border-radius:99px;overflow:hidden;margin:14px 0 7px}
+  .fitfill{height:100%;background:linear-gradient(90deg,var(--accent),var(--good))}
+  .fittext{font-size:.85rem;color:#b9c8da}
+  .reason-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:16px}
+  .pill{padding:10px 11px;border-radius:10px;background:#0e1622;border:1px solid #26374f;color:#dfe9f7;font-size:.87rem}
+  .rankings{margin-top:16px;display:grid;gap:9px}
+  .rank{display:grid;grid-template-columns:42px 1fr auto;gap:10px;align-items:center;background:#101823;border:1px solid #25354c;border-radius:12px;padding:12px}
+  .place{font-weight:900;color:var(--accent);font-size:1.05rem}
+  .rname{font-weight:800}.rmeta{color:var(--muted);font-size:.82rem;margin-top:2px}
+  .score{font-weight:900;color:#d7e7fb}
+  .why{margin-top:20px;background:#111a27;border:1px solid #273851;border-radius:13px;padding:16px}
+  .why h3{margin:0 0 7px;font-size:1rem}.why p{margin:0;color:#bdcce0}.sigma-scale{display:grid;gap:6px;margin-top:12px}.sigma-scale>div{display:grid;grid-template-columns:minmax(155px,210px) 1fr;gap:12px;padding:7px 9px;border:1px solid #26374f;border-radius:9px;background:#0e1622;color:#d7e3f3;font-size:.86rem}.sigma-scale>div span:last-child{color:#b9c8da}@media(max-width:520px){.sigma-scale>div{grid-template-columns:1fr;gap:2px}}
+  .tiebreak-note{color:var(--muted);margin:.25rem 0 1rem}
+  details{background:#111925;border:1px solid #26374e;border-radius:12px;padding:12px 14px;margin-top:14px}
+  summary{cursor:pointer;font-weight:800}
+  .logic{color:#bac9dd;font-size:.91rem}.logic code{color:#dceaff}
+  footer{margin-top:42px;border-top:1px solid var(--line);padding-top:20px;color:#8396af;font-size:.82rem}
+  footer a{color:#a8d8ff}
+  @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.progress,button{transition:none}}
+  @media(max-width:680px){.reason-grid{grid-template-columns:1fr}.rank{grid-template-columns:34px 1fr auto}.wrap{width:min(100% - 20px,980px)}.question{padding:15px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">World of Warcraft: Forever</div>
+    <h1>Find Your Main</h1>
+    <p class="lede">A playstyle-first finder for the 27 WoW Forever talent trees. It avoids directly asking for melee vs. ranged, physical vs. magic, or a favorite class fantasy. Instead, it measures the decisions, pacing, responsibility, and mastery style you want from combat.</p>
+    <div class="notice"><strong>Forever, not Classic Era.</strong> This version is based on Blizzard's September 2026 Forever design information plus community transcriptions of the BlizzCon demo talent trees. Beta begins September 17, so mechanics and tuning can still change. This finds a <em>primary tree identity</em>, not a complete 51-point build.</div>
+    <div class="js-status" id="jsStatus"><strong>Mobile note:</strong> if this message stays yellow and the questions do not become interactive, your file preview is blocking JavaScript. Save the file and open it in Safari/Chrome.</div>
+    <noscript><div class="error" style="display:block">JavaScript is disabled in this viewer. This quiz must be opened in a normal browser such as Safari or Chrome.</div></noscript>
+  </header>
+
+  <div class="toolbar">
+    <div class="progress-shell"><div class="progress" id="progress"></div></div>
+    <div class="progress-text"><span id="progressLabel">0 of 19 questions answered</span><span>Check all that genuinely apply</span></div>
+  </div>
+
+  <main>
+    <h2 class="section-title">Round 1: Build your playstyle profile</h2>
+    <div id="quiz"></div>
+    <div class="error" id="error" role="alert">Answer every question before calculating your results.</div>
+    <div class="actions">
+      <button class="primary" id="scoreBtn" type="button" onclick="scoreQuiz()">Build my shortlist</button>
+      <button class="ghost" id="resetBtn" type="button" onclick="resetQuiz()">Reset</button>
+    </div>
+
+    <section id="results" aria-live="polite"></section>
+
+    <section id="tiebreaker">
+      <h2 class="section-title">Round 2: Adaptive refinement</h2>
+      <p class="tiebreak-note">These six questions are selected from a larger bank by testing which questions best separate your current leading trees. You can check more than one answer.</p>
+      <div id="tieQuiz"></div>
+      <div class="error" id="tieError" role="alert">Answer all six refinement questions first.</div>
+      <div class="actions"><button class="primary" id="refineBtn" type="button" onclick="refineQuiz()">Calculate final result</button></div>
+    </section>
+
+    <details>
+      <summary>How the scoring works</summary>
+      <div class="logic">
+        <p><strong>1. Each question is internally centered.</strong> An answer is interpreted relative to the other choices in that question, so an option cannot score highly merely because its raw vector contains more numbers.</p>
+        <p><strong>2. Multi-select expresses uncertainty.</strong> One selection carries full evidence, two carry less, three carry little, and all four are neutral. Broad answers therefore reduce certainty rather than inflate scores.</p>
+        <p><strong>3. The 27 tree profiles are standardized dimension by dimension.</strong> A trait only separates a tree when that tree is unusually high or low in it relative to the Forever roster. Profiles are hand-coded from the currently revealed mechanics and are not trained on player outcome data.</p>
+        <p><strong>4. Matching uses cosine similarity.</strong> This compares the direction of your preference profile with each standardized tree profile without rewarding a tree simply for having more high-valued traits.</p>
+        <p><strong>5. Round 2 is adaptive.</strong> Candidate questions are simulated against your current top five; the six expected to create the most useful separation are chosen, with a penalty for asking near-duplicate questions.</p>
+        <p><strong>6. Result stability is tested.</strong> The final page removes each informative question one at a time and recalculates the winner. This shows how dependent the result is on any single answer.</p>
+        <p><strong>7. No score is a probability.</strong> Results are reported as standard deviations above or below your average match across the 27 trees, plus answer specificity and leave-one-question-out stability. Close results are explicitly reported as ties.</p>
+        <p>The result is a <strong>playstyle recommendation</strong>, not a DPS ranking, raid-value ranking, psychological test, or guarantee of final beta tuning.</p>
+      </div>
+    </details>
+  </main>
+
+  <footer>
+    <strong>Source basis:</strong> Blizzard's WoW Forever announcement and Deep Dive design philosophy, cross-checked against current community transcriptions of the BlizzCon demo trees. The community dataset used for mechanics contains 470 talents across 27 trees; exact change classifications can differ between trackers, and beta data may supersede the demo. Quiz logic version 3.1 adds direct adaptive-question discrimination, leave-one-question-out stability testing, stale-result protection, source-reviewed tree profiles, and a plain-language sigma score guide. This page is unofficial and not affiliated with Blizzard Entertainment.<br><br>
+    Sources: <a href="https://worldofwarcraft.blizzard.com/en-us/news/24303313" target="_blank" rel="noopener noreferrer">Blizzard: Forever Deep Dive</a> · <a href="https://worldofwarcraft.blizzard.com/en-us/news/24303862/world-of-warcraft-forever-whats-next-panel-recap" target="_blank" rel="noopener noreferrer">Blizzard: What's Next recap</a> · <a href="https://wowforever.quest/guides/wow-forever-talent-changes" target="_blank" rel="noopener noreferrer">Demo talent transcription</a>
+  </footer>
+</div>
+
+<script>
+const DIMS=["burst","sustain","reaction","planning","execution","maintenance","setup","utility","control","support","resource","commitment","adaptability","attrition","companion","durability","tankRole","healerRole"];
+const v=(o={})=>Object.fromEntries(DIMS.map(k=>[k,o[k]||0]));
+
+const questions=[
+  ["When a difficult fight finally clicks, what feels best?",[
+    ["I've learned the rhythm and can execute it almost automatically.",v({sustain:2,execution:3})],
+    ["I recognize the important moment and absolutely capitalize on it.",v({burst:3,reaction:2,execution:2})],
+    ["I feel like I'm manipulating the fight rather than just following it.",v({planning:2,utility:2,control:3})],
+    ["Things start going wrong and I'm the reason the group recovers.",v({reaction:2,support:3,adaptability:2})]
+  ]],
+  ["Which kind of power curve sounds best during a fight?",[
+    ["Consistently strong from beginning to end.",v({sustain:4})],
+    ["Normal output interrupted by extremely strong moments.",v({burst:4})],
+    ["Set things up, then become increasingly dangerous.",v({setup:3,planning:2,attrition:2})],
+    ["Power changes constantly depending on what just happened.",v({reaction:4,adaptability:2})]
+  ]],
+  ["You make a small mistake. What should happen next?",[
+    ["I have enough durability or recovery to continue without panicking.",v({durability:4})],
+    ["I use the correct situational tool and fix it.",v({utility:3,adaptability:3})],
+    ["Mistakes are costly because excellent execution should be rewarded.",v({execution:4,commitment:2})],
+    ["I alter my next few decisions and work my way back into control.",v({reaction:2,planning:2,adaptability:3})]
+  ]],
+  ["Which type of decision-making sounds most satisfying?",[
+    ["Building and spending a resource efficiently.",v({resource:4,planning:1})],
+    ["Watching for opportunities and immediately reacting.",v({reaction:4})],
+    ["Maintaining several things correctly over time.",v({maintenance:4,attrition:2})],
+    ["Choosing the right tool from a large toolbox.",v({utility:4,adaptability:3})]
+  ]],
+  ["Your current target suddenly needs to die immediately. You'd prefer:",[
+    ["Switch immediately and lose almost nothing.",v({adaptability:4,commitment:-1})],
+    ["Have something powerful available specifically for moments like this.",v({burst:4,planning:1})],
+    ["Be rewarded for having prepared the situation beforehand.",v({setup:4,planning:3})],
+    ["Stay committed to what I was already doing because changing targets should have a cost.",v({commitment:4,attrition:2})]
+  ]],
+  ["How do you feel about preparation before combat?",[
+    ["Minimal. Let me start fighting.",v({setup:-3,reaction:1})],
+    ["A little preparation is good if it gives me an advantage.",v({setup:2})],
+    ["I enjoy planning ahead and exploiting that preparation later.",v({setup:4,planning:3})],
+    ["I like having lots of possible preparation, but deciding what is actually worth doing.",v({setup:3,utility:3,planning:2})]
+  ]],
+  ["In a five-player group, which reputation sounds best?",[
+    ["They're extremely reliable.",v({sustain:3,execution:2})],
+    ["When something needs to die, they make it disappear.",v({burst:4})],
+    ["They always seem to have an answer for weird situations.",v({utility:4,adaptability:3})],
+    ["That run would have fallen apart without them.",v({support:4,reaction:2})]
+  ]],
+  ["Pick your preferred kind of complexity.",[
+    ["Simple rules, difficult execution.",v({execution:4,maintenance:-2})],
+    ["Lots of moment-to-moment reactions.",v({reaction:4})],
+    ["Planning several steps ahead.",v({planning:4,setup:2})],
+    ["Managing multiple overlapping systems.",v({maintenance:4,resource:2})]
+  ]],
+  ["You're fighting something dangerous by yourself. What sounds most satisfying?",[
+    ["Outlasting it.",v({durability:4,attrition:2})],
+    ["Preventing it from doing what it wants.",v({control:4,utility:2})],
+    ["Killing it before the situation becomes dangerous.",v({burst:4})],
+    ["Constantly changing tactics depending on what happens.",v({adaptability:4,reaction:3})]
+  ]],
+  ["What kind of failure annoys you the most?",[
+    ["Having to wait before I can meaningfully act again.",v({sustain:3,reaction:1})],
+    ["Realizing I used an important ability at the wrong time.",v({planning:3,burst:2})],
+    ["Losing something I'd spent time setting up.",v({setup:4,commitment:2})],
+    ["Knowing I had the right answer available but pressed the wrong thing.",v({utility:3,execution:2})]
+  ]],
+  ["Which combat rhythm sounds best?",[
+    ["A smooth repeating loop that I gradually optimize.",v({sustain:4,execution:2})],
+    ["Calm periods punctuated by sudden high-intensity windows.",v({burst:4,planning:2})],
+    ["Almost no fixed rotation because priorities keep changing.",v({reaction:4,adaptability:3})],
+    ["Several plates spinning at once that I try to keep under control.",v({maintenance:4,planning:2})]
+  ]],
+  ["Five enemies appear. Your instinctive preference is:",[
+    ["Focus on one important enemy while damaging the others incidentally.",v({commitment:3,sustain:2})],
+    ["Hit everything hard at once.",v({burst:3,adaptability:1})],
+    ["Set up effects across several enemies and profit over time.",v({attrition:4,maintenance:3,setup:2})],
+    ["Make the entire pack easier to manage.",v({control:4,utility:2})]
+  ]],
+  ["During a very long boss fight, which sounds most appealing?",[
+    ["Sustained performance with very little variance.",v({sustain:4})],
+    ["Repeated cycles of building toward big moments.",v({burst:3,planning:2})],
+    ["Efficiently maintaining effects and slowly gaining value.",v({attrition:4,maintenance:3})],
+    ["Managing limited resources so I don't run myself dry.",v({resource:4,planning:2})]
+  ]],
+  ["How much do you want combat to reward aggression?",[
+    ["Very heavily. Keeping pressure up should make me stronger.",v({sustain:3,reaction:2})],
+    ["Moderately. Aggression matters, but judgment matters more.",v({planning:3,execution:2})],
+    ["I prefer patience and choosing exactly when to commit.",v({planning:4,commitment:3,burst:2})],
+    ["Aggression isn't especially important; controlling the situation is.",v({control:4,utility:2})]
+  ]],
+  ["A new ability is added to your character. Which would excite you most?",[
+    ["Something that changes how my normal rotation flows.",v({sustain:2,execution:2,reaction:1})],
+    ["A powerful button with a very noticeable payoff.",v({burst:4})],
+    ["A situational tool that creates clever possibilities.",v({utility:4,control:2})],
+    ["Something that interacts with several abilities I already have.",v({maintenance:3,planning:2})]
+  ]],
+  ["Which statement comes closest to your ideal character?",[
+    ["Easy to understand, very hard to master.",v({execution:4,maintenance:-2})],
+    ["Always feels like something interesting could happen next.",v({reaction:3,adaptability:2})],
+    ["Rewards someone who understands encounters better than everyone else.",v({planning:4,utility:2})],
+    ["Can solve problems other characters simply cannot.",v({utility:4,support:2,control:2})]
+  ]],
+  ["What feels better than topping a damage meter?",[
+    ["Executing nearly perfectly for an entire encounter.",v({execution:4,sustain:3})],
+    ["Absolutely destroying an important priority target.",v({burst:4,commitment:2})],
+    ["Making an enemy mechanic almost irrelevant through clever play.",v({control:3,utility:4})],
+    ["Saving another player from a situation that should have killed them.",v({support:4,reaction:2})]
+  ]],
+  ["You play the same character for hundreds of hours. What keeps it interesting?",[
+    ["Continually tightening execution and efficiency.",v({execution:4,sustain:2})],
+    ["Chasing extremely satisfying high-impact moments.",v({burst:4})],
+    ["Discovering tricks, interactions and unusual solutions.",v({utility:4,adaptability:2})],
+    ["Having enough different tools that encounters don't all feel the same.",v({utility:3,adaptability:4})]
+  ]],
+  ["How do you feel about part of your effectiveness coming from something separate that you actively manage?",[
+    ["I'd rather most of my power come directly from my own actions.",v({companion:-4,execution:1})],
+    ["A secondary contributor is fine as long as it isn't the whole identity.",v({companion:1})],
+    ["I like coordinating with a separate contributor as a major part of mastery.",v({companion:4,maintenance:2})],
+    ["I like being able to change that contributor to suit different situations.",v({companion:4,adaptability:3,utility:2})]
+  ]]
+];
+
+const tieQuestions=[
+  ["Which mistake would you rather be punished for?",[
+    ["Acting a fraction too early or too late.",v({execution:4})],
+    ["Choosing the wrong moment to commit.",v({planning:4,commitment:3})],
+    ["Missing an opportunity that appeared unexpectedly.",v({reaction:4})],
+    ["Using a resource inefficiently over several seconds.",v({resource:4,sustain:2})]
+  ]],
+  ["Your character has one mechanic that takes 100 hours to truly master. Which sounds best?",[
+    ["Precise timing.",v({execution:4})],
+    ["Knowing exactly when to hold or spend something.",v({planning:4,resource:2})],
+    ["Rapidly reacting to changing conditions.",v({reaction:4})],
+    ["Finding unconventional interactions and tricks.",v({utility:4,adaptability:2})]
+  ]],
+  ["You play perfectly for 30 seconds. What should that look like?",[
+    ["A sequence of extremely precise actions.",v({execution:4})],
+    ["Several ordinary actions leading into one devastating moment.",v({burst:4,planning:2})],
+    ["Constantly making tiny optimizations faster than another player would.",v({sustain:3,reaction:2,execution:2})],
+    ["Manipulating the encounter so things happen on my terms.",v({control:4,utility:3})]
+  ]],
+  ["You have an ability capable of saving another player. How does that affect your interest?",[
+    ["That's a major selling point.",v({support:4})],
+    ["Nice to have, but my primary gameplay matters much more.",v({support:1,execution:2})],
+    ["I'd usually rather have another offensive tool.",v({support:-3,burst:2})],
+    ["I want several abilities like that.",v({support:5,utility:2})]
+  ]],
+  ["Two equally geared players use your tree. What should separate the exceptional one?",[
+    ["Mechanical precision.",v({execution:4})],
+    ["Judgment about when to act.",v({planning:4,commitment:2})],
+    ["Reaction speed.",v({reaction:4})],
+    ["Knowledge of obscure tricks and encounter interactions.",v({utility:4,adaptability:2})]
+  ]],
+  ["What sounds most satisfying after 1,000 hours?",[
+    ["My execution is almost flawless.",v({execution:4})],
+    ["I almost always know exactly when to commit.",v({planning:4,commitment:3})],
+    ["I react instinctively without consciously thinking anymore.",v({reaction:4})],
+    ["I keep discovering things the tree can do.",v({utility:4,adaptability:3})]
+  ]]
+];
+
+const specs=[
+  ["Warrior","Arms",{burst:4.2,sustain:3.4,reaction:3.8,planning:4.6,execution:4.7,maintenance:2.2,setup:3.0,utility:2.4,control:3.4,support:.5,resource:4.2,commitment:4.2,adaptability:2.7,attrition:2.5,companion:0,durability:4.0},"Rend-and-Overpower weapon master: Bloodthrill adds reactive Overpower windows while Mortal Strike preserves deliberate, committed pressure."],
+  ["Warrior","Fury",{burst:3.6,sustain:5,reaction:4.5,planning:2.4,execution:4.5,maintenance:2,setup:1.2,utility:1.5,control:1.5,support:.5,resource:4.5,commitment:2.5,adaptability:2.5,attrition:1,companion:0,durability:3.5},"Relentless berserker tempo: Boundless Rage, Raging Blows, Enrage and Bloodthirst reward sustained pressure and fast execution."],
+  ["Warrior","Protection",{burst:1.8,sustain:3.3,reaction:4.3,planning:3.4,execution:3.7,maintenance:2.5,setup:2.2,utility:4,control:5,support:3.8,resource:3.8,commitment:4,adaptability:4,attrition:1,companion:0,durability:5},"Reactive shield tank: block-driven Rage, Shield Slam, Revenge, Vanguard and Bastion make enemy control and defensive execution central."],
+
+  ["Paladin","Holy",{burst:2,sustain:4,reaction:4.6,planning:3.5,execution:3.2,maintenance:2.8,setup:2.5,utility:5,control:2.2,support:5,resource:4.4,commitment:2,adaptability:4.6,attrition:1,companion:0,durability:4},"Armored reactive healer: Holy Shock, Infusion of Light, Light's Vigil, blessings and emergency tools reward triage with broad utility."],
+  ["Paladin","Protection",{burst:2.5,sustain:4,reaction:3.4,planning:4.2,execution:3.4,maintenance:3,setup:3.6,utility:5,control:4.3,support:4,resource:3.6,commitment:4,adaptability:4,attrition:2,companion:0,durability:5},"Prepared holy tank: Seal of Fury, Swift Judgement, Holy Shield and Templar's Bulwark combine threat planning, blocking and group utility."],
+  ["Paladin","Retribution",{burst:4.5,sustain:3.5,reaction:3.2,planning:4.6,execution:5,maintenance:3.4,setup:3.6,utility:4,control:2.5,support:2.4,resource:3.4,commitment:4.2,adaptability:3,attrition:1.2,companion:0,durability:4},"Timing-heavy crusader: Holy Strike, Judgement and Twist of Light make seal swapping and payoff timing intentional parts of mastery."],
+
+  ["Hunter","Beast Mastery",{burst:3.2,sustain:4.5,reaction:3,planning:2.6,execution:3,maintenance:3.5,setup:2.5,utility:3.2,control:3,support:1,resource:3,commitment:2,adaptability:4,attrition:2,companion:5,durability:3.5},"Hunter-and-beast partnership: Bestial Wrath, Focused Fire and Summon Hawk put a large share of mastery into coordinated companion pressure."],
+  ["Hunter","Marksmanship",{burst:5,sustain:3,reaction:2.5,planning:5,execution:4.5,maintenance:2,setup:4,utility:2.7,control:3,support:.5,resource:3.5,commitment:4,adaptability:3,attrition:1,companion:1.2,durability:2.5},"Precision payoff tree: Sniper Shot, Careful Aim and Lone Wolf reward deliberate priority damage with an optional petless direction."],
+  ["Hunter","Survival",{burst:3.5,sustain:3.6,reaction:4.2,planning:4,execution:4.2,maintenance:3.5,setup:5,utility:4.5,control:4.5,support:.5,resource:3,commitment:4,adaptability:5,attrition:4,companion:2.5,durability:4},"Trap-and-predator specialist: Strider Kick, Expose Prey, Mongoose Bite and Lacerating Strikes reward setup, control, bleeds and adaptation."],
+
+  ["Rogue","Assassination",{burst:3.7,sustain:4.4,reaction:2.6,planning:4,execution:4.2,maintenance:4.5,setup:4,utility:4,control:4,support:.5,resource:4.6,commitment:4.5,adaptability:3,attrition:5,companion:0,durability:2.5},"Poison assassin: Mutilate and Venom reward poison setup, combo-point economy and maintaining pressure on committed targets."],
+  ["Rogue","Combat",{burst:3.3,sustain:5,reaction:3.5,planning:3.2,execution:5,maintenance:2.2,setup:1.5,utility:3.4,control:3.3,support:.5,resource:4.8,commitment:3,adaptability:3.5,attrition:1,companion:0,durability:3},"Sustained weapon specialist: Restless Blades, Blade Flurry and Adrenaline Rush reward clean energy use and continuous execution."],
+  ["Rogue","Subtlety",{burst:5,sustain:2.5,reaction:3.5,planning:5,execution:5,maintenance:3,setup:5,utility:5,control:5,support:.5,resource:4.4,commitment:4.5,adaptability:4,attrition:3,companion:0,durability:2.5},"Setup-and-strike specialist: stealth, control, positional attacks, Premeditation and Thousand Cuts reward preparation and precise windows."],
+
+  ["Priest","Discipline",{burst:2,sustain:4,reaction:4.2,planning:4.5,execution:3.5,maintenance:3.5,setup:4.5,utility:5,control:3,support:5,resource:4.5,commitment:2,adaptability:4.5,attrition:1,companion:0,durability:3},"Proactive support healer: Soul Warding, Penance, Renewed Hope, Divine Aegis and Power Infusion reward prevention and planned protection."],
+  ["Priest","Holy",{burst:2,sustain:4,reaction:5,planning:3.2,execution:3.5,maintenance:3,setup:2,utility:4,control:2,support:5,resource:4.5,commitment:2,adaptability:5,attrition:1,companion:0,durability:2.5},"Versatile reactive healer: Binding Heal, Litany of Light and Prayer of Mending reward choosing the right response as damage patterns change."],
+  ["Priest","Shadow Magic",{burst:2.7,sustain:5,reaction:2.7,planning:4,execution:4,maintenance:5,setup:4,utility:4,control:4,support:1.5,resource:4,commitment:5,adaptability:2.5,attrition:5,companion:0,durability:3.5},"Psychic attrition: DoTs, Mind Flay, Devouring Contagion and Shadowform reward sustained pressure, upkeep and target commitment."],
+
+  ["Shaman","Elemental Combat",{burst:5,sustain:3,reaction:3.8,planning:4,execution:4,maintenance:3,setup:4.5,utility:5,control:4,support:1.5,resource:4,commitment:3.5,adaptability:4,attrition:2,companion:0,durability:3},"Stormcaster with setup: Flame Shock empowers Lava Burst while Lightning Overload, Earthbound and totems add reactive payoff and control."],
+  ["Shaman","Enhancement",{burst:4,sustain:4,reaction:5,planning:3.5,execution:4.5,maintenance:3,setup:2.5,utility:5,control:3,support:1.5,resource:3.8,commitment:3.5,adaptability:4,attrition:1.5,companion:0,durability:3.5},"Melee-and-spell weaving: Stormstrike, Maelstrom Weapon and Rage of the Farseer reward reacting to procs while managing elemental utility."],
+  ["Shaman","Restoration",{burst:2,sustain:4,reaction:5,planning:3.3,execution:3.5,maintenance:3.2,setup:3.5,utility:5,control:4,support:5,resource:5,commitment:2,adaptability:5,attrition:1,companion:0,durability:3},"Ancestral group healer: Riptide, Chain Heal interactions, Water Shield and totems reward triage, mana judgment and heavy utility."],
+
+  ["Mage","Arcane",{burst:5,sustain:2.5,reaction:4,planning:5,execution:4.3,maintenance:3,setup:4,utility:4,control:3,support:.5,resource:5,commitment:4.5,adaptability:2.5,attrition:1,companion:0,durability:2},"Mana-for-power specialist: Arcane Blast stacking, Missile Barrage and Arcane Power turn resource burn and planned windows into damage."],
+  ["Mage","Fire",{burst:5,sustain:3.5,reaction:5,planning:3,execution:4.3,maintenance:2.5,setup:2.2,utility:3,control:2.5,support:.5,resource:3,commitment:2.5,adaptability:3,attrition:2,companion:0,durability:2},"Crit-driven explosive caster: Hot Streak, Ignite and Combustion turn critical hits into immediate high-impact opportunities."],
+  ["Mage","Frost",{burst:3.5,sustain:4,reaction:4.5,planning:4,execution:4,maintenance:3,setup:3,utility:5,control:5,support:.5,resource:3,commitment:2,adaptability:5,attrition:1,companion:0,durability:4},"Control-and-shatter specialist: Fingers of Frost, Ice Lance, freezes and Ice Barrier reward manipulating enemies and capitalizing on openings."],
+
+  ["Warlock","Affliction",{burst:2,sustain:5,reaction:2.5,planning:4.7,execution:3.5,maintenance:5,setup:5,utility:5,control:4,support:.5,resource:4.5,commitment:5,adaptability:3,attrition:5,companion:2,durability:4},"Long-form curse and drain pressure: Pandemic, Banes, Soul Siphon and Drain Hope reward setup, upkeep and committed attrition."],
+  ["Warlock","Demonology",{burst:3,sustain:4,reaction:3,planning:4,execution:3.2,maintenance:4.5,setup:4.5,utility:5,control:3,support:1.5,resource:3.2,commitment:3,adaptability:4,attrition:2,companion:5,durability:5},"Demon commander: Demonic Knowledge, Demonic Sacrifice, Soul Link and Demonic Pact make pet choice and pet coordination central."],
+  ["Warlock","Destruction",{burst:5,sustain:3.5,reaction:3,planning:4,execution:4,maintenance:3,setup:3.5,utility:4,control:3,support:.5,resource:4,commitment:4,adaptability:3,attrition:2,companion:2,durability:3.5},"Direct destructive spellcraft: Immolate, Conflagrate, Bane of Havoc, Shadow and Flame and Incinerate reward planned direct-damage payoff."],
+
+  ["Druid","Balance",{burst:4,sustain:4,reaction:4.5,planning:4.5,execution:4,maintenance:4,setup:3.5,utility:5,control:4,support:2,resource:4,commitment:3,adaptability:5,attrition:3,companion:0,durability:3},"Flexible nature-and-arcane caster: Balance of Nature and Eclipse reward spell weaving while roots and broad Druid tools preserve adaptability."],
+  ["Druid","Feral Combat",{burst:4,sustain:4,reaction:4,planning:4,execution:5,maintenance:4,setup:3,utility:5,control:4,support:2,resource:4,commitment:4,adaptability:5,attrition:4,companion:0,durability:4.5},"One Cat/Bear tree: Mangle, bleeds, King of the Jungle, Natural Reaction and Berserk reward form-specific execution and unusual role flexibility."],
+  ["Druid","Restoration",{burst:1.5,sustain:5,reaction:4.7,planning:4,execution:3.5,maintenance:5,setup:4,utility:5,control:3,support:5,resource:4,commitment:3,adaptability:5,attrition:1,companion:0,durability:3},"HoT-focused nature healer: Rejuvenation, Swiftmend, Gift of the Earthmother and Wild Growth reward layered healing and flexible support."]
+].map(([cls,name,p,desc])=>({cls,name,p:v(p),desc}));
+
+
+
+// Two indirect responsibility questions separate primary-role preference from generic utility.
+questions.push(
+  ["When a group situation gets messy, where do you instinctively want your attention to go?",[
+    ["Make the situation orderly so everyone else can operate predictably.",v({tankRole:4,control:2,durability:1})],
+    ["Watch the people most at risk and reverse dangerous swings before they snowball.",v({healerRole:4,support:2,reaction:1})],
+    ["Nail the highest-impact task assigned to me and trust others with theirs.",v({execution:3,planning:1,burst:2,tankRole:-1,healerRole:-1})],
+    ["Move to whichever problem is currently underserved.",v({adaptability:4,utility:3})]
+  ]],
+  ["Which kind of accountability would stay satisfying over hundreds of group runs?",[
+    ["The encounter stays structured because I keep pressure and positioning under control.",v({tankRole:5,control:2,durability:1})],
+    ["I constantly track the group's condition and decide where intervention matters most.",v({healerRole:5,reaction:2,support:2})],
+    ["Most of my responsibility is maximizing my own sequence, timing, and target choices.",v({execution:3,planning:2,burst:1,tankRole:-1,healerRole:-1})],
+    ["My value comes from covering unusual gaps rather than owning one fixed responsibility.",v({adaptability:4,utility:3})]
+  ]]
+);
+
+// Role responsibility is intentionally separated from generic utility/support so that
+// liking utility does not accidentally make someone look like a healer or tank.
+const ROLE_PROFILE={
+  "Warrior|Protection":{tankRole:5},
+  "Paladin|Protection":{tankRole:5},
+  "Druid|Feral Combat":{tankRole:3.2},
+  "Paladin|Holy":{healerRole:5},
+  "Priest|Discipline":{healerRole:5},
+  "Priest|Holy":{healerRole:5},
+  "Shaman|Restoration":{healerRole:5},
+  "Druid|Restoration":{healerRole:5}
+};
+specs.forEach(s=>Object.assign(s.p,ROLE_PROFILE[`${s.cls}|${s.name}`]||{}));
+
+const dimNames={burst:"high-impact payoff",sustain:"sustained rhythm",reaction:"reactive decisions",planning:"deliberate judgment",execution:"mechanical precision",maintenance:"multi-system upkeep",setup:"setup and preparation",utility:"toolbox utility",control:"encounter control",support:"saving/supporting allies",resource:"resource management",commitment:"target commitment",adaptability:"adaptability",attrition:"attrition and long-form pressure",companion:"separate-unit management",durability:"self-reliance and durability",tankRole:"owning enemy pressure",healerRole:"owning ally recovery"};
+
+// Round 2 uses a bank and automatically chooses the six questions that best separate
+// the player's current leading trees.
+const tieBank=[
+  {focus:["execution","planning","commitment","reaction","resource"],q:tieQuestions[0]},
+  {focus:["execution","planning","reaction","utility"],q:tieQuestions[1]},
+  {focus:["execution","burst","reaction","control"],q:tieQuestions[2]},
+  {focus:["support","utility","burst"],q:tieQuestions[3]},
+  {focus:["execution","planning","reaction","utility"],q:tieQuestions[4]},
+  {focus:["execution","planning","commitment","reaction","utility"],q:tieQuestions[5]},
+  {focus:["setup","sustain","maintenance","control","adaptability","reaction"],q:["A fight gives you a few seconds where nothing urgent is happening. What do you most want that downtime to reward?",[
+    ["Preparing the next major payoff so it lands exactly when I want it.",v({setup:4,planning:3,burst:2})],
+    ["Keeping my normal pressure efficient so I never really lose momentum.",v({sustain:4,execution:2})],
+    ["Maintaining effects or positioning that will matter later.",v({maintenance:3,control:2,attrition:2})],
+    ["Watching the situation and being ready to change plans instantly.",v({reaction:4,adaptability:3})]
+  ]]},
+  {focus:["resource","commitment","durability","companion"],q:["Which limitation would make mastery more interesting rather than annoying?",[
+    ["A resource that punishes me for spending carelessly.",v({resource:4,planning:2})],
+    ["Committing to a target or plan and losing value if I abandon it.",v({commitment:4,planning:2})],
+    ["Being vulnerable if I fail to use my defensive tools correctly.",v({durability:3,execution:3})],
+    ["Part of my effectiveness coming from something separate that I manage.",v({companion:5,maintenance:2})]
+  ]]},
+  {focus:["tankRole","healerRole","burst","adaptability","control","support"],q:["A difficult pull suddenly starts collapsing. Which fix sounds most satisfying?",[
+    ["Regain control of the enemies and make the pull predictable again.",v({tankRole:4,control:4,durability:2})],
+    ["Stabilize the players who are closest to dying.",v({healerRole:4,support:4,reaction:2})],
+    ["Delete the enemy causing the problem before anything else matters.",v({burst:4,execution:2})],
+    ["Improvise around whatever the group is currently missing.",v({adaptability:4,utility:3})]
+  ]]},
+  {focus:["tankRole","healerRole","execution","adaptability"],q:["Which kind of pressure would you rather be trusted with for an entire dungeon?",[
+    ["Keeping enemy attention and positioning stable for everyone else.",v({tankRole:5,control:3})],
+    ["Keeping the party alive through mistakes and unavoidable damage.",v({healerRole:5,support:3})],
+    ["Producing excellent output while handling my own mechanics cleanly.",v({execution:4,sustain:2,burst:2})],
+    ["Being the flexible player who can cover unusual situations.",v({adaptability:4,utility:3})]
+  ]]},
+  {focus:["attrition","setup","commitment","burst","maintenance"],q:["How should delayed payoff feel?",[
+    ["I like long setups that become increasingly valuable if I maintain them.",v({attrition:4,setup:4,commitment:3,maintenance:2})],
+    ["Some setup is good, but I still want a steady baseline between payoffs.",v({sustain:3,setup:2})],
+    ["I would rather most of my value happen quickly and visibly.",v({burst:4,attrition:-2})],
+    ["I like delayed effects mainly when I can manage them across several targets.",v({maintenance:4,attrition:3,adaptability:2})]
+  ]]},
+  {focus:["companion","maintenance","adaptability","execution"],q:["If part of your combat power came from a separate controllable contributor, what would make that enjoyable?",[
+    ["Nothing. I would rather nearly all of my effectiveness come directly from me.",v({companion:-5,execution:2})],
+    ["It is fine as a background contributor, but I do not want to babysit it.",v({companion:1,maintenance:-1})],
+    ["Coordinating both of us should be a meaningful part of playing well.",v({companion:5,maintenance:3,execution:2})],
+    ["I want to swap or adapt that contributor for different situations.",v({companion:5,adaptability:4,utility:2})]
+  ]]}
+  ,{focus:["burst","sustain","attrition","resource"],q:["Which kind of optimization would keep a long encounter interesting?",[
+    ["Keeping a steady engine running with as little wasted time as possible.",v({sustain:4,execution:2})],
+    ["Shaping repeated peaks so the strongest moments happen when they matter.",v({burst:4,planning:3})],
+    ["Building value that compounds when I maintain it correctly over time.",v({attrition:4,maintenance:3,commitment:2})],
+    ["Deciding how aggressively to spend a limited resource without ruining the rest of the fight.",v({resource:5,planning:2})]
+  ]]},
+  {focus:["adaptability","commitment","setup","control"],q:["The encounter suddenly invalidates your original plan. What response sounds best?",[
+    ["Pivot immediately with very little lost value.",v({adaptability:5,commitment:-2})],
+    ["Hold course if possible because good commitment should be rewarded.",v({commitment:5,planning:2})],
+    ["Use something I prepared earlier to preserve the payoff.",v({setup:4,planning:3})],
+    ["Change the situation itself so my original plan becomes workable again.",v({control:4,utility:3})]
+  ]]},
+  {focus:["execution","reaction","maintenance","planning"],q:["After hundreds of hours, which improvement would you be most proud of?",[
+    ["My inputs and sequencing are almost mechanically flawless.",v({execution:5})],
+    ["I recognize changing opportunities almost instantly.",v({reaction:5})],
+    ["I can maintain several interacting priorities without losing track of any of them.",v({maintenance:5})],
+    ["I make better decisions because I understand when to hold, wait, or commit.",v({planning:5,commitment:2})]
+  ]]},
+  {focus:["durability","utility","burst","resource"],q:["Which tradeoff sounds most worth mastering?",[
+    ["I can survive difficult situations, but only if I use my defensive tools correctly.",v({durability:5,execution:2})],
+    ["I give up some straightforward output in exchange for answers to unusual problems.",v({utility:5,adaptability:2})],
+    ["My ordinary moments are weaker because my payoff windows are much stronger.",v({burst:5,sustain:-2})],
+    ["I can push harder than others, but poor resource judgment has real consequences.",v({resource:5,planning:2})]
+  ]]}
+];
+
+
+function zero(){return v()}
+function mag(a){return Math.sqrt(DIMS.reduce((s,k)=>s+a[k]*a[k],0))}
+function normalize(a){const n=mag(a);if(!n)return zero();const o=zero();DIMS.forEach(k=>o[k]=a[k]/n);return o}
+function meanVec(arr){const o=zero();if(!arr.length)return o;arr.forEach(x=>DIMS.forEach(k=>o[k]+=x[k]/arr.length));return o}
+function addVec(a,b,w=1){const o=zero();DIMS.forEach(k=>o[k]=a[k]+b[k]*w);return o}
+function subVec(a,b,w=1){const o=zero();DIMS.forEach(k=>o[k]=a[k]-b[k]*w);return o}
+function dot(a,b){return DIMS.reduce((s,k)=>s+a[k]*b[k],0)}
+
+// Two Round-1 items from v2 were removed: one duplicated existing axes and one anchored the
+// player to a DPS-meter framing. The underlying answer model stays the same for the retained items.
+const round1Questions=questions.filter((_,i)=>i!==0 && i!==16);
+
+function renderQuiz(targetId,data,prefix){
+  const root=document.getElementById(targetId);
+  root.innerHTML=data.map((q,i)=>`<fieldset class="question"><legend><span class="qnum">Question ${i+1}</span><br>${q[0]}</legend><div class="opts">${q[1].map((o,j)=>`<label class="opt"><input type="checkbox" name="${prefix}${i}" value="${j}"><span>${o[0]}</span></label>`).join("")}</div><div class="hint">Choose every answer that genuinely fits. One choice is strongest evidence; all four make this question neutral.</div></fieldset>`).join("");
+}
+renderQuiz("quiz",round1Questions,"q");
+
+function answeredCount(prefix,count){let n=0;for(let i=0;i<count;i++)if(document.querySelectorAll(`input[name=${prefix}${i}]:checked`).length)n++;return n}
+function updateProgress(){const n=answeredCount("q",round1Questions.length);const pct=n/round1Questions.length*100;document.getElementById("progress").style.width=`${pct}%`;document.getElementById("progress").setAttribute("aria-valuenow",String(Math.round(pct)));document.getElementById("progressLabel").textContent=`${n} of ${round1Questions.length} questions answered`;}
+const progress=document.getElementById("progress");progress.setAttribute("role","progressbar");progress.setAttribute("aria-valuemin","0");progress.setAttribute("aria-valuemax","100");progress.setAttribute("aria-valuenow","0");
+
+// Each question is centered against its own answers. Multi-select lowers selectivity instead of adding points.
+function questionContribution(q,selected){
+  if(!selected.length)return {vec:zero(),info:0};
+  const allMean=meanVec(q[1].map(o=>o[1]));
+  const chosenMean=meanVec(selected.map(i=>q[1][i][1]));
+  const diff=zero();DIMS.forEach(k=>diff[k]=chosenMean[k]-allMean[k]);
+  const unit=normalize(diff);
+  const selectivity=q[1].length>1?(q[1].length-selected.length)/(q[1].length-1):1;
+  DIMS.forEach(k=>unit[k]*=selectivity);
+  return {vec:unit,info:selectivity};
+}
+
+function collect(data,prefix){
+  let out=zero(),answered=0,info=0;const parts=[];
+  data.forEach((q,i)=>{
+    const checked=[...document.querySelectorAll(`input[name=${prefix}${i}]:checked`)];
+    if(!checked.length)return;
+    answered++;
+    const c=questionContribution(q,checked.map(el=>+el.value));
+    out=addVec(out,c.vec);info+=c.info;parts.push({vec:c.vec,info:c.info,index:i});
+  });
+  return {vec:out,answered,info:answered?info/answered:0,parts};
+}
+
+// Standardize each dimension across the 27 primary trees. This prevents a commonly-high raw trait
+// from dominating merely because many hand-authored profiles use a high number for it.
+const specMean=zero(),specSD=zero();
+DIMS.forEach(k=>{
+  specMean[k]=specs.reduce((s,x)=>s+x.p[k],0)/specs.length;
+  const variance=specs.reduce((s,x)=>s+(x.p[k]-specMean[k])**2,0)/specs.length;
+  specSD[k]=Math.sqrt(variance)||1;
+});
+specs.forEach(s=>{s.zp=zero();DIMS.forEach(k=>s.zp[k]=(s.p[k]-specMean[k])/specSD[k])});
+
+function cosine(a,b){let aa=0,bb=0;const d=dot(a,b);DIMS.forEach(k=>{aa+=a[k]*a[k];bb+=b[k]*b[k]});return aa&&bb?d/(Math.sqrt(aa)*Math.sqrt(bb)):0}
+function rankings(pref){return specs.map(s=>({...s,sim:cosine(pref,s.zp)})).sort((a,b)=>b.sim-a.sim)}
+function stats(vals){const mean=vals.reduce((a,x)=>a+x,0)/vals.length;const sd=Math.sqrt(vals.reduce((a,x)=>a+(x-mean)**2,0)/vals.length)||1;return {mean,sd}}
+function relativeZ(ranks,sim){const st=stats(ranks.map(r=>r.sim));return (sim-st.mean)/st.sd}
+function zLabel(z){return z>=2?"Exceptional match":z>=1.5?"Very strong match":z>=1?"Strong match":z>=.5?"Good match":z>=-.5?"Average match":z>=-1?"Weak match":"Very weak match"}
+function fmtZ(z){return `${z>=0?"+":""}${z.toFixed(2)}σ`}
+function topPositive(pref){return DIMS.map(k=>[k,pref[k]]).filter(x=>x[1]>.15).sort((a,b)=>b[1]-a[1]).slice(0,5)}
+function strongestOverlap(pref,spec){return DIMS.map(k=>[k,pref[k]*spec.zp[k],pref[k],spec.zp[k]]).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]).slice(0,3)}
+function pairSpread(vals){let s=0,n=0;for(let i=0;i<vals.length;i++)for(let j=i+1;j<vals.length;j++){s+=Math.abs(vals[i]-vals[j]);n++}return n?s/n:0}
+function focusOverlap(a,b){const A=new Set(a),B=new Set(b);let inter=0;A.forEach(x=>{if(B.has(x))inter++});const union=new Set([...A,...B]).size;return union?inter/union:0}
+
+// Simulate every single-choice answer against the current top candidates. Questions score highly
+// when their possible answers produce materially different candidate similarities.
+function discrimination(entry,candidates,pref){
+  const outcomes=entry.q[1].map((_,i)=>{
+    const c=questionContribution(entry.q,[i]);const p=addVec(pref,c.vec);
+    return candidates.map(s=>cosine(p,s.zp));
+  });
+  const spread=outcomes.reduce((sum,vals)=>sum+pairSpread(vals),0)/outcomes.length;
+  const winners=new Set(outcomes.map(vals=>vals.indexOf(Math.max(...vals)))).size;
+  return spread*(1+.08*Math.max(0,winners-1));
+}
+function chooseTieQuestions(top,pref){
+  const pool=tieBank.map((e,idx)=>({e,idx,raw:discrimination(e,top,pref)}));const chosen=[];
+  while(chosen.length<6&&pool.length){
+    pool.forEach(x=>{const redundancy=chosen.length?Math.max(...chosen.map(c=>focusOverlap(x.e.focus,c.e.focus))):0;x.adjusted=x.raw*(1-.35*redundancy)});
+    pool.sort((a,b)=>b.adjusted-a.adjusted);chosen.push(pool.shift());
+  }
+  return chosen.map(x=>x.e.q);
+}
+
+function separation(pref,leader,alt){
+  const d=DIMS.map(k=>[k,pref[k]*(leader.zp[k]-alt.zp[k])]).sort((a,b)=>b[1]-a[1]);
+  return {leader:d.filter(x=>x[1]>.03).slice(0,2).map(x=>dimNames[x[0]]),alt:d.filter(x=>x[1]<-.03).slice(-2).reverse().map(x=>dimNames[x[0]])};
+}
+function stabilityTest(pref,parts,winner){
+  const informative=parts.filter(p=>mag(p.vec)>.0001);if(!informative.length)return {winner:0,top2:0,n:0};
+  const baseTop2=rankings(pref).slice(0,2).map(r=>`${r.cls}|${r.name}`);let same=0,top2same=0;
+  informative.forEach(p=>{const r=rankings(subVec(pref,p.vec));const key=`${r[0].cls}|${r[0].name}`;if(key===winner)same++;const pair=r.slice(0,2).map(x=>`${x.cls}|${x.name}`);if(baseTop2.every(x=>pair.includes(x)))top2same++});
+  return {winner:same/informative.length,top2:top2same/informative.length,n:informative.length};
+}
+
+let basePref=null,baseInfo=0,baseParts=[],selectedTieQuestions=[];
+function safeScroll(el){try{el.scrollIntoView({behavior:"smooth",block:"start"})}catch(e){try{el.scrollIntoView(true)}catch(_){}}}
+function showRuntimeError(e){const err=document.getElementById("error");err.textContent="The quiz hit a browser error: "+(e&&e.message?e.message:String(e))+". Try reloading the page in Safari or Chrome.";err.style.display="block";safeScroll(err)}
+function clearStale(){if(basePref){basePref=null;baseInfo=0;baseParts=[];selectedTieQuestions=[];document.getElementById("results").style.display="none";document.getElementById("tiebreaker").style.display="none";const err=document.getElementById("error");err.textContent="Your Round 1 answers changed. Build the shortlist again so the adaptive questions stay valid.";err.style.display="block"}}
+document.getElementById("quiz").addEventListener("change",()=>{updateProgress();clearStale()});
+
+function shortlistHTML(ranks,pref,info){
+  const top=ranks.slice(0,5);const pos=topPositive(pref).map(x=>dimNames[x[0]]);
+  return `<h2 class="section-title">Initial shortlist</h2>
+    <div class="result-hero">
+      <div class="winner-label">Round 1 complete</div>
+      <div class="winner">No main selected yet</div>
+      <div class="classline">These are your five closest primary-tree identities. Round 2 is chosen specifically to separate these candidates.</div>
+      <div class="fittext" style="margin-top:12px">Answer specificity: ${Math.round(info*100)} / 100. This measures how selective your answers were, not how good or certain your preferences are.</div>
+      <div class="reason-grid">${pos.slice(0,3).map(x=>`<div class="pill">Current signal: <strong>${x}</strong></div>`).join("")}</div>
+    </div>
+    <div class="rankings">${top.map((r,i)=>`<div class="rank"><div class="place">#${i+1}</div><div><div class="rname">${r.cls} · ${r.name}</div><div class="rmeta">${r.desc}</div></div><div class="score">shortlist</div></div>`).join("")}</div>
+    <div class="why"><h3>Why there is no percentage</h3><p>This model is not trained on a dataset where a true probability of choosing each tree is known. Round 1 therefore creates candidates instead of presenting an invented percentage or declaring a winner early.</p></div>`;
+}
+
+function scoreQuiz(){
+  try{
+    const c=collect(round1Questions,"q"),err=document.getElementById("error");
+    document.getElementById("results").style.display="none";document.getElementById("tiebreaker").style.display="none";
+    if(c.answered!==round1Questions.length){err.textContent=`You answered ${c.answered} of ${round1Questions.length} questions. Answer every question before building your shortlist.`;err.style.display="block";safeScroll(err);return}
+    if(c.info<.16||mag(c.vec)<.5){err.textContent="Your selections are too broad to produce a reliable shortlist. On at least a few questions, choose only the answers that fit you best. Selecting all four is intentionally neutral.";err.style.display="block";safeScroll(err);return}
+    err.style.display="none";basePref=c.vec;baseInfo=c.info;baseParts=c.parts;
+    const ranks=rankings(basePref);document.getElementById("results").innerHTML=shortlistHTML(ranks,basePref,baseInfo);document.getElementById("results").style.display="block";
+    selectedTieQuestions=chooseTieQuestions(ranks.slice(0,5),basePref);renderQuiz("tieQuiz",selectedTieQuestions,"t");
+    document.getElementById("tiebreaker").style.display="block";safeScroll(document.getElementById("results"));
+  }catch(e){showRuntimeError(e)}
+}
+
+function finalHTML(pref,info,parts){
+  const ranks=rankings(pref),top=ranks[0],second=ranks[1];const topZ=relativeZ(ranks,top.sim),secondZ=relativeZ(ranks,second.sim),zGap=topZ-secondZ;
+  const winnerKey=`${top.cls}|${top.name}`,stab=stabilityTest(pref,parts,winnerKey),stability=Math.round(stab.winner*100);
+  const tied=zGap<.18,unstable=stab.winner<.68;
+  const stabilityLabel=stab.winner>=.88&&zGap>=.45&&info>=.4?"High":stab.winner>=.72&&zGap>=.2&&info>=.25?"Moderate":"Low / close";
+  const overlap=strongestOverlap(pref,top);const pos=topPositive(pref).map(x=>dimNames[x[0]]);
+  const heroName=tied?`${top.cls} · ${top.name}  /  ${second.cls} · ${second.name}`:`${top.cls} · ${top.name}`;
+  const heroLabel=tied?"Effectively tied leading matches":unstable?"Leading match, but answer-sensitive":"Best playstyle match";
+  const heroDesc=tied?`The current answers do not justify forcing a single winner. ${top.cls} ${top.name}: ${top.desc} ${second.cls} ${second.name}: ${second.desc}`:unstable?`${top.desc} It leads the full result, but removing individual answers changes the winner often enough that the alternatives deserve serious consideration.`:top.desc;
+  const alternatives=ranks.slice(1,4).map((r,i)=>{const sep=separation(pref,top,r);const why=sep.leader.length?`Leader gains on ${sep.leader.join(" and ")}.`:"The distinction is spread across several smaller signals.";const counter=sep.alt.length?` ${r.name} gains on ${sep.alt.join(" and ")}.`:"";return `<div class="rank"><div class="place">#${i+2}</div><div><div class="rname">${r.cls} · ${r.name}</div><div class="rmeta">${r.desc}<br><strong>Separation:</strong> ${why}${counter}</div></div><div class="score">${fmtZ(relativeZ(ranks,r.sim))}</div></div>`}).join("");
+  return `<h2 class="section-title">Final result</h2>
+    <div class="result-hero">
+      <div class="winner-label">${heroLabel}</div>
+      <div class="winner">${heroName}</div>
+      <div class="classline">${heroDesc}</div>
+      <div class="fittext" style="margin-top:14px"><strong>Relative fit: ${fmtZ(topZ)}</strong> · <strong>${zLabel(topZ)}</strong></div>
+      <div class="fittext">Your ${fmtZ(topZ)} score means this tree sits ${Math.abs(topZ).toFixed(2)} standard deviations ${topZ>=0?"above":"below"} <strong>your own average match across all 27 Forever trees</strong>. Higher positive values mean the tree stands out more strongly for you. This is not a probability, percentile, or comparison with other players.</div>
+      <div class="fittext" style="margin-top:7px"><strong>Result stability: ${stability}%</strong> · ${stabilityLabel}. This is the share of leave-one-question-out recalculations that keep the same #1 tree.</div>
+      <div class="reason-grid">${overlap.map(([k])=>`<div class="pill">Strong match: <strong>${dimNames[k]}</strong></div>`).join("")}</div>
+    </div>
+    <div class="why">
+      <h3>How to read your σ (sigma) score</h3>
+      <p><strong>σ is read “sigma” and means standard deviation.</strong> Here it measures how far a tree's match score is from <strong>your average across the 27 Forever trees</strong>. It does not compare you with other players.</p>
+      <div class="sigma-scale" role="table" aria-label="Sigma match strength guide">
+        <div role="row"><span role="cell"><strong>Below −1.00σ</strong></span><span role="cell">Very weak match</span></div>
+        <div role="row"><span role="cell"><strong>−1.00σ to −0.50σ</strong></span><span role="cell">Weak match</span></div>
+        <div role="row"><span role="cell"><strong>−0.49σ to +0.49σ</strong></span><span role="cell">Average match</span></div>
+        <div role="row"><span role="cell"><strong>+0.50σ to +0.99σ</strong></span><span role="cell">Good match</span></div>
+        <div role="row"><span role="cell"><strong>+1.00σ to +1.49σ</strong></span><span role="cell">Strong match</span></div>
+        <div role="row"><span role="cell"><strong>+1.50σ to +1.99σ</strong></span><span role="cell">Very strong match</span></div>
+        <div role="row"><span role="cell"><strong>+2.00σ or higher</strong></span><span role="cell">Exceptional match</span></div>
+      </div>
+      <p style="margin-top:10px"><strong>Your current leader: ${fmtZ(topZ)} = ${zLabel(topZ)}.</strong> There is intentionally no “perfect match” score: σ is a relative measure of how much one tree stands out from your other options, not a 0–100% compatibility scale.</p>
+    </div>
+    <div class="rankings"><div class="rank"><div class="place">#1</div><div><div class="rname">${top.cls} · ${top.name}</div><div class="rmeta">${top.desc}</div></div><div class="score">${fmtZ(topZ)}</div></div>${alternatives}${ranks.slice(4,7).map((r,i)=>`<div class="rank"><div class="place">#${i+5}</div><div><div class="rname">${r.cls} · ${r.name}</div><div class="rmeta">${r.desc}</div></div><div class="score">${fmtZ(relativeZ(ranks,r.sim))}</div></div>`).join("")}</div>
+    <div class="why"><h3>What your answers emphasize</h3><p>${pos.length?pos.join(" · "):"Your preferences are broad rather than concentrated on a few dimensions."}</p></div>
+    <div class="why"><h3>How stable is this?</h3><p>${tied?"The top two are too close to justify pretending there is one definitive answer.":unstable?`#1 leads #2 by ${zGap.toFixed(2)} standard deviations, but the winner is sensitive to individual questions.`:`#1 leads #2 by ${zGap.toFixed(2)} standard deviations within your 27-tree result distribution.`} Answer specificity across both rounds: ${Math.round(info*100)} / 100. Leave-one-question-out winner retention: ${stability}% across ${stab.n} informative answers.</p></div>`;
+}
+
+function refineQuiz(){
+  try{
+    const c=collect(selectedTieQuestions,"t"),err=document.getElementById("tieError");
+    if(!basePref){err.textContent="Round 1 changed or was reset. Rebuild your shortlist first.";err.style.display="block";safeScroll(err);return}
+    if(c.answered!==selectedTieQuestions.length){err.textContent=`You answered ${c.answered} of ${selectedTieQuestions.length} refinement questions. Answer all six first.`;err.style.display="block";safeScroll(err);return}
+    err.style.display="none";const finalPref=addVec(basePref,c.vec);const finalInfo=(baseInfo*round1Questions.length+c.info*selectedTieQuestions.length)/(round1Questions.length+selectedTieQuestions.length);const allParts=[...baseParts,...c.parts];
+    document.getElementById("results").innerHTML=finalHTML(finalPref,finalInfo,allParts);document.getElementById("tiebreaker").style.display="none";safeScroll(document.getElementById("results"));
+  }catch(e){showRuntimeError(e)}
+}
+
+function resetQuiz(){
+  try{document.querySelectorAll('input[type=checkbox]').forEach(x=>x.checked=false);basePref=null;baseInfo=0;baseParts=[];selectedTieQuestions=[];updateProgress();document.getElementById("results").style.display="none";document.getElementById("tiebreaker").style.display="none";document.getElementById("error").style.display="none";document.getElementById("tieError").style.display="none";try{window.scrollTo({top:0,behavior:"smooth"})}catch(e){window.scrollTo(0,0)}}catch(e){showRuntimeError(e)}
+}
+window.addEventListener("error",ev=>{const status=document.getElementById("jsStatus");if(status){status.className="js-status";status.innerHTML="<strong>JavaScript error:</strong> "+(ev.message||"Unknown error")+". Reload in Safari or Chrome."}});
+const status=document.getElementById("jsStatus");if(status){status.className="js-status ready";status.innerHTML="<strong>Quiz ready.</strong> JavaScript is running on this device."}
+
+</script>
+</body>
+</html>
